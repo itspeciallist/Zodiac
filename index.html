@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ka">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ზოდიაქოს კალკულატორი</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>ზოდიაქოსა და თავსებადობის კალკულატორი</h1>
+      <p class="disclaimer">შედეგები გასართობ მიზნებისთვისაა.</p>
+    </header>
+
+    <section class="card">
+      <h2>შეიყვანეთ თქვენი და პარტნიორის თარიღები</h2>
+      <div class="grid">
+        <div class="field">
+          <label for="my_date">თქვენი თარიღი</label>
+          <input id="my_date" type="date" />
+        </div>
+        <div class="field">
+          <label for="partner_date">პარტნიორის თარიღი</label>
+          <input id="partner_date" type="date" />
+        </div>
+      </div>
+      <button id="calc_btn">გამოთვლა</button>
+    </section>
+
+    <section id="results" class="hidden">
+      <div class="grid">
+        <div class="card">
+          <h3>თქვენი პროფილი</h3>
+          <div id="me_block"></div>
+        </div>
+        <div class="card">
+          <h3>პარტნიორის პროფილი</h3>
+          <div id="partner_block"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>თავსებადობა</h3>
+        <div id="compat_score" class="score">—</div>
+        <div class="progress">
+          <div id="bar" class="bar" style="width:0%"></div>
+        </div>
+        <div id="compat_text" class="muted"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const $ = (sel) => document.querySelector(sel);
+
+    function fmtProfile(p) {
+      if (!p || !p.western) return "<p class='muted'>არ არის მონაცემი</p>";
+      const w = p.western;
+      return `
+        <div class="big-emoji">${w.emoji || ""}</div>
+        <p><strong>ნიშანი:</strong> ${w.ka} (${w.en})</p>
+        <p><strong>სტიქია/მოდალობა:</strong> ${w.element} · ${w.modality}</p>
+        <p><strong>მმართველი:</strong> ${w.planet}</p>
+        <p class="muted">${w.blurb}</p>
+        <hr/>
+        <p><strong>მთვარის ნიშანი:</strong> ${p.moon.ka} ${p.moon.emoji}</p>
+        <p><strong>ჩინური:</strong> ${p.chinese}</p>
+        <p><strong>Life Path:</strong> ${p.life_path}</p>
+      `;
+    }
+
+    $("#calc_btn").addEventListener("click", async () => {
+      const my_date = $("#my_date").value;
+      const partner_date = $("#partner_date").value;
+      const r = await fetch("/api/calc", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ my_date, partner_date }),
+      });
+      const data = await r.json();
+      $("#results").classList.remove("hidden");
+      $("#me_block").innerHTML = fmtProfile(data.me);
+      $("#partner_block").innerHTML = fmtProfile(data.partner);
+      $("#compat_score").textContent = data.compatibility.score + "%";
+      $("#bar").style.width = data.compatibility.score + "%";
+      $("#compat_text").textContent = data.compatibility.note;
+    });
+  </script>
+</body>
+</html>
